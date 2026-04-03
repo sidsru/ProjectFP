@@ -15,20 +15,26 @@ AFPCharacterBase::AFPCharacterBase()
 void AFPCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	PrimaryActorTick.bCanEverTick = false;
+
+
 }
 
 // Called every frame
-void AFPCharacterBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
+//void AFPCharacterBase::Tick(float DeltaTime)
+//{
+//	Super::Tick(DeltaTime);
+//
+//}
 
 // Called to bind functionality to input
 void AFPCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+void AFPCharacterBase::Move(const FInputActionValue& Value)
+{
 }
 

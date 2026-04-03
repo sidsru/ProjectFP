@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "InputActionValue.h"
 #include "FPCharacterBase.generated.h"
-
 UCLASS()
 class PROJECTFP_API AFPCharacterBase : public ACharacter
 {
@@ -21,9 +21,13 @@ protected:
 
 public:	
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	//virtual void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+#pragma region InputFunction
+	UFUNCTION()
+	void Move(const FInputActionValue& Value);
+#pragma endregion
 };
