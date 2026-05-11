@@ -64,13 +64,7 @@ export async function updateLastLoginAt(accountId, connection = null) {
   );
 }
 
-export async function createPlayerProfile(
-  {
-    accountId,
-    nickname
-  },
-  connection = null
-) {
+export async function createPlayerProfile(account_id, connection = null, nickname = null ) {
   const db = getExecutor(connection);
 
   const [result] = await db.query(
@@ -81,12 +75,11 @@ export async function createPlayerProfile(
     )
     VALUES (?, ?)
     `,
-    [accountId, nickname]
+    [account_id, nickname]
   );
 
   return result.insertId;
 }
-
 export async function findProfileByAccountId(accountId, connection = null) {
   const db = getExecutor(connection);
 

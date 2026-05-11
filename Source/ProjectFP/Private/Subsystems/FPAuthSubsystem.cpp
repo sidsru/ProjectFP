@@ -18,7 +18,7 @@ void UFPAuthSubsystem::RegisterAccount (const FString& UserID ,const FString& Pa
 
 	TSharedRef<IHttpRequest> Request = FHttpModule::Get( ).CreateRequest ( );// HTTP 요청 생성
 
-	Request->SetURL( ApiBaseUrl + TEXT( "/auth/register" ) ); // todo : 하드코딩된 URL 변수로 변경
+	Request->SetURL( ApiBaseUrl + TEXT( "/auth/register"  ) ); // todo : 하드코딩된 URL 변수로 변경
 	Request->SetVerb( TEXT( "POST" ) );
 	Request->SetHeader( TEXT( "Content-Type" ), TEXT( "application/json" ) );
 	Request->SetContentAsString( RequestBody );
@@ -120,19 +120,17 @@ void UFPAuthSubsystem::OnLoginResponse (FHttpRequestPtr Request ,FHttpResponsePt
 
 	if ( bSuccess )
 	{
-		const FString Token = JsonObject->GetStringField ( TEXT ( "token" ) );
+		const FString Token = JsonObject->GetStringField ( TEXT ( "accessToken" ) );
 
 		const TSharedPtr<FJsonObject>* AccountObject = nullptr;
 		if ( JsonObject->TryGetObjectField ( TEXT ( "account" ) , AccountObject ) )
 		{
-			const int32 AccountId = ( *AccountObject )->GetIntegerField ( TEXT ( "accountId" ) );
+			const int32 AccountId = ( *AccountObject )->GetIntegerField ( TEXT ( "account_id" ) );
 			const FString UserID = ( *AccountObject )->GetStringField ( TEXT ( "UserID" ) );
-			const FString Password = ( *AccountObject )->GetStringField ( TEXT ( "Password" ) );
 
 			UE_LOG ( LogTemp , Display , TEXT ( "Login success." ) );
 			UE_LOG ( LogTemp , Display , TEXT ( "AccountId: %d" ) , AccountId );
 			UE_LOG ( LogTemp , Display , TEXT ( "UserID: %s" ) , *UserID );
-			UE_LOG ( LogTemp , Display , TEXT ( "Password: %s" ) , *Password );
 		}
 
 		UE_LOG ( LogTemp , Display , TEXT ( "Token: %s" ) , *Token );

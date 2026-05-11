@@ -25,40 +25,34 @@ function createAccessToken(account) {
   );
 }
 
-export async function registerAccount({ UserID, password, nickname }) {
-  const connection = await pool.getConnection();
+export async function registerAccount({ UserID, Password }) {
+  const connection = await pool.getConnection(); // 풀에서 DB연결을 가져옴
 
   try {
     await connection.beginTransaction();
 
-    const existingAccount = await findAccountByUserID(UserID, connection);
+    const existingAccount = await findAccountByUserID(UserID, connection); // 중복 아이디 확인 
 
     if (existingAccount) {
-      throw new Error("DUPLICATED_USER_ID");
+      throw new Error("DUPLICATED_USER_ID"); // 중복 아이디 발견으로 인해 오류를 던짐
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(Password, 10); // 입력된 비밀 번호를 해쉬 값으로 변경하여 저장
 
     const accountId = await createAccount(
       {
-        UserID,
-        passwordHash,
-        accountStatus: "ACTIVE"
+        UserID,// 아이디
+        passwordHash, //해쉬값으로 변경된 비밀번호
+        accountStatus: "ACTIVE" // 접속을 확인
       },
       connection
     );
 
-    const profileId = await createPlayerProfile(
-      {
-        accountId,
-        nickname: nickname || UserID
-      },
-      connection
-    );
+    const profileData = await createPlayerProfile(accountId, connection); // 프로필 생성
 
-    await createInventory(profileId, connection);
+    await createInventory(profileData , connection); // 인벤토리 생성
 
-    await createDefaultCurrencies(profileId, connection);
+    await createDefaultCurrencies(profileData, connection);
 
     await connection.commit();
 
@@ -69,16 +63,15 @@ export async function registerAccount({ UserID, password, nickname }) {
     };
 
     const profile = {
-      profile_id: profileId,
-      nickname: nickname || UserID,
+      profile_id: profileData,
       level: 1,
       exp: 0
     };
 
-    const accessToken = createAccessToken(account);
+    const accessToken = createAccessToken(account); // 토큰 생성
 
     return {
-      accessToken,
+      accessToken, 
       account,
       profile
     };
@@ -90,7 +83,7 @@ export async function registerAccount({ UserID, password, nickname }) {
   }
 }
 
-export async function loginAccount({ UserID, password }) {
+export async function loginAccount({ UserID, Password }) {
   const account = await findAccountByUserID(UserID);
 
   if (!account) {
@@ -98,7 +91,7 @@ export async function loginAccount({ UserID, password }) {
   }
 
   const isPasswordValid = await bcrypt.compare(
-    password,
+    Password,
     account.password_hash
   );
 

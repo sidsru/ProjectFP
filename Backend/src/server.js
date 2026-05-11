@@ -12,6 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 기본 라우터 호출 메시지 
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -19,11 +20,15 @@ app.get("/", (req, res) => {
   });
 });
 
+// 인증 라우터 호출
 app.use("/auth", authRoutes);
+
+// 인벤토리 라우터 호출
 app.use("/inventory", inventoryRoutes);
 
 const PORT = process.env.PORT || 3000;
 
+// 서버 실행
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
