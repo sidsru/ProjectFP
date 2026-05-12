@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS( Config = Game , DefaultConfig )
 class PROJECTFP_API UFPBackendSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()

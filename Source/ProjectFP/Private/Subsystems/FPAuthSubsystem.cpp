@@ -1,40 +1,48 @@
 ﻿#include "Subsystems/FPAuthSubsystem.h"
 
+#include "Subsystems/FPApiSubsystem.h"
 #include "HttpModule.h"
 #include "Json.h"
 #include "JsonUtilities.h"
 #include "Interfaces/IHttpResponse.h"
 
-void UFPAuthSubsystem::RegisterAccount (const FString& UserID ,const FString& Password/* , const FString& Nickname */)
+void UFPAuthSubsystem::RegisterAccount ( const FString& UserID , const FString& Password )
 {
-	TSharedRef<FJsonObject> JsonObject = MakeShared<FJsonObject>( );// 제이슨 객체 생성
-	JsonObject->SetStringField( TEXT( "UserID" ), UserID );
-	JsonObject->SetStringField( TEXT( "Password" ), Password );
-	//JsonObject->SetStringField( TEXT( "nickname" ), Nickname );
+	TSharedRef<FJsonObject> JsonObject = MakeShared<FJsonObject> ( );// 제이슨 객체 생성
 
-	FString RequestBody;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create( &RequestBody );
-	FJsonSerializer::Serialize( JsonObject, Writer ); // 제이슨 객체를 문자열로 변환
+	JsonObject->SetStringField ( TEXT ( "UserID" ) , UserID );
+	JsonObject->SetStringField ( TEXT ( "Password" ) , Password );
 
-	TSharedRef<IHttpRequest> Request = FHttpModule::Get( ).CreateRequest ( );// HTTP 요청 생성
+	UGameInstance* GameInstance = GetGameInstance ( );
+	if ( !GameInstance )
+	{
+		UE_LOG ( LogTemp , Error , TEXT ( "RequestRegister failed: GameInstance is null." ) );
+		return;
+	}
 
-	Request->SetURL( ApiBaseUrl + TEXT( "/auth/register"  ) ); // todo : 하드코딩된 URL 변수로 변경
-	Request->SetVerb( TEXT( "POST" ) );
-	Request->SetHeader( TEXT( "Content-Type" ), TEXT( "application/json" ) );
-	Request->SetContentAsString( RequestBody );
+	UFPApiSubsystem* ApiSubsystem = GameInstance->GetSubsystem<UFPApiSubsystem> ( );
+	if ( !ApiSubsystem )
+	{
+		UE_LOG ( LogTemp , Error , TEXT ( "RequestRegister failed: ApiSubsystem is null." ) );
+		return;
+	}
+	//Api서브시스템에 HTTP 요청을 보내는 부분
+	ApiSubsystem->PostJson ( TEXT ( "/auth/register" ) , JsonObject ,
+		FFPApiResponseDelegate::CreateUObject (
+			this ,
+			&UFPAuthSubsystem::OnRegisterResponse
+		)
+	);
 
-	Request->OnProcessRequestComplete().BindUObject( this, &UFPAuthSubsystem::OnRegisterResponse );
-
-	Request->ProcessRequest();
 }
 
-void UFPAuthSubsystem::OnRegisterResponse (FHttpRequestPtr Request ,FHttpResponsePtr Response ,bool bWasSuccessful )
+void UFPAuthSubsystem::OnRegisterResponse ( FHttpRequestPtr Request , FHttpResponsePtr Response , bool bWasSuccessful )
 {
 	if ( !bWasSuccessful || !Response.IsValid ( ) )
 	{
-		UE_LOG ( LogTemp , Error , TEXT ( "Register request failed." ) );
+		RegisterResultDelegate.Broadcast ( false , FText::FromString ( "Register request failed." ) );
 		return;
-	}		
+	}
 
 	const int32 StatusCode = Response->GetResponseCode ( );
 	const FString ResponseBody = Response->GetContentAsString ( );
@@ -47,7 +55,7 @@ void UFPAuthSubsystem::OnRegisterResponse (FHttpRequestPtr Request ,FHttpRespons
 
 	if ( !FJsonSerializer::Deserialize ( Reader , JsonObject ) || !JsonObject.IsValid ( ) )
 	{
-		UE_LOG ( LogTemp , Error , TEXT ( "Failed to parse register response JSON." ) );
+		RegisterResultDelegate.Broadcast ( false , FText::FromString ( "Failed to parse register response JSON." ) );
 		return;
 	}
 
@@ -56,48 +64,55 @@ void UFPAuthSubsystem::OnRegisterResponse (FHttpRequestPtr Request ,FHttpRespons
 	if ( bSuccess )
 	{
 		const int32 AccountId = JsonObject->GetIntegerField ( TEXT ( "accountId" ) );
-		UE_LOG ( LogTemp , Display , TEXT ( "Register success. AccountId: %d" ) , AccountId );
+		RegisterResultDelegate.Broadcast ( true , FText::FromString ( "Register success." ) );
 	}
 	else
 	{
 		FString Error;
 		JsonObject->TryGetStringField ( TEXT ( "error" ) , Error );
-		UE_LOG ( LogTemp , Error , TEXT ( "Register failed. Error: %s" ) , *Error );
+		RegisterResultDelegate.Broadcast ( false , FText::FromString ( FString::Printf ( TEXT ( "Register failed. Error: %s" ) , *Error ) ) );
 	}
 }
 
-void UFPAuthSubsystem::Login (const FString& UserID ,const FString& Password )
+void UFPAuthSubsystem::Login ( const FString& UserID , const FString& Password )
 {
-	TSharedRef<FJsonObject> JsonObject = MakeShared<FJsonObject> ( );
+	TSharedPtr<FJsonObject> JsonObject = MakeShared<FJsonObject> ( );
+
 	JsonObject->SetStringField ( TEXT ( "UserID" ) , UserID );
 	JsonObject->SetStringField ( TEXT ( "Password" ) , Password );
 
-	FString RequestBody;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create ( &RequestBody );
-	FJsonSerializer::Serialize ( JsonObject , Writer );
+	UGameInstance* GameInstance = GetGameInstance ( );
+	if ( !GameInstance )
+	{
+		UE_LOG ( LogTemp , Error , TEXT ( "RequestRegister failed: GameInstance is null." ) );
+		return;
+	}
 
-	TSharedRef<IHttpRequest> Request = FHttpModule::Get ( ).CreateRequest ( );
+	UFPApiSubsystem* ApiSubsystem = GameInstance->GetSubsystem<UFPApiSubsystem> ( );
+	if ( !ApiSubsystem )
+	{
+		UE_LOG ( LogTemp , Error , TEXT ( "RequestRegister failed: ApiSubsystem is null." ) );
+		return;
+	}
 
-	Request->SetURL ( ApiBaseUrl + TEXT ( "/auth/login" ) );
-	Request->SetVerb ( TEXT ( "POST" ) );
-	Request->SetHeader ( TEXT ( "Content-Type" ) , TEXT ( "application/json" ) );
-	Request->SetContentAsString ( RequestBody );
+	if ( !ApiSubsystem )
+	{
+		return;
+	}
 
-	Request->OnProcessRequestComplete ( ).BindUObject (
-		this ,
-		&UFPAuthSubsystem::OnLoginResponse
+	ApiSubsystem->PostJson ( TEXT ( "/auth/login" ) , JsonObject ,
+		FFPApiResponseDelegate::CreateUObject (
+			this ,
+			&UFPAuthSubsystem::OnLoginResponse
+		)
 	);
-	UE_LOG ( LogTemp , Warning , TEXT ( "Register RequestBody: %s" ) , *RequestBody );
-	UE_LOG ( LogTemp , Warning , TEXT ( "Register UserID: [%s]" ) , *UserID );
-	UE_LOG ( LogTemp , Warning , TEXT ( "Register Password: [%s]" ) , *Password );
-	Request->ProcessRequest ( );
 }
 
-void UFPAuthSubsystem::OnLoginResponse (FHttpRequestPtr Request ,FHttpResponsePtr Response ,bool bWasSuccessful )
+void UFPAuthSubsystem::OnLoginResponse ( FHttpRequestPtr Request , FHttpResponsePtr Response , bool bWasSuccessful )
 {
 	if ( !bWasSuccessful || !Response.IsValid ( ) )
 	{
-		UE_LOG ( LogTemp , Error , TEXT ( "Login request failed." ) );
+		LoginResultDelegate.Broadcast ( false , FText::FromString ( "Login request failed." ) );
 		return;
 	}
 
@@ -112,7 +127,7 @@ void UFPAuthSubsystem::OnLoginResponse (FHttpRequestPtr Request ,FHttpResponsePt
 
 	if ( !FJsonSerializer::Deserialize ( Reader , JsonObject ) || !JsonObject.IsValid ( ) )
 	{
-		UE_LOG ( LogTemp , Error , TEXT ( "Failed to parse login response JSON." ) );
+		LoginResultDelegate.Broadcast ( false , FText::FromString ( "Failed to parse login response JSON." ) );
 		return;
 	}
 
@@ -128,17 +143,51 @@ void UFPAuthSubsystem::OnLoginResponse (FHttpRequestPtr Request ,FHttpResponsePt
 			const int32 AccountId = ( *AccountObject )->GetIntegerField ( TEXT ( "account_id" ) );
 			const FString UserID = ( *AccountObject )->GetStringField ( TEXT ( "UserID" ) );
 
-			UE_LOG ( LogTemp , Display , TEXT ( "Login success." ) );
 			UE_LOG ( LogTemp , Display , TEXT ( "AccountId: %d" ) , AccountId );
 			UE_LOG ( LogTemp , Display , TEXT ( "UserID: %s" ) , *UserID );
+			SetLoginSession ( AccountId , UserID , Token );
 		}
 
-		UE_LOG ( LogTemp , Display , TEXT ( "Token: %s" ) , *Token );
+		LoginResultDelegate.Broadcast ( true , FText::FromString ( "Login success." ) );
 	}
 	else
 	{
 		FString Error;
 		JsonObject->TryGetStringField ( TEXT ( "error" ) , Error );
-		UE_LOG ( LogTemp , Error , TEXT ( "Login failed. Error: %s" ) , *Error );
+		LoginResultDelegate.Broadcast ( false , FText::FromString ( Error ) );
 	}
+}
+
+void UFPAuthSubsystem::SetLoginSession ( int64 InAccountId , const FString& InUserID , const FString& InAccessToken )
+{
+	Account = InAccountId;
+	User = InUserID;
+	AccessToken = InAccessToken;
+}
+
+void UFPAuthSubsystem::ClearLoginSession ( )
+{
+	Account = -1;
+	User.Empty ( );
+	AccessToken.Empty ( );
+}
+
+bool UFPAuthSubsystem::IsLoggedIn ( ) const
+{
+	return Account > 0 && !AccessToken.IsEmpty ( );
+}
+
+int64 UFPAuthSubsystem::GetAccountId ( ) const
+{
+	return Account;
+}
+
+const FString& UFPAuthSubsystem::GetUserID ( ) const
+{
+	return User;
+}
+
+const FString& UFPAuthSubsystem::GetAccessToken ( ) const
+{
+	return AccessToken;
 }

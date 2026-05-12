@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
+import characterRoutes from "./routes/characterRoutes.js";
 
 dotenv.config();
 
@@ -25,6 +26,9 @@ app.use("/auth", authRoutes);
 
 // 인벤토리 라우터 호출
 app.use("/inventory", inventoryRoutes);
+
+//캐릭터 라우터 호출출
+app.use("/characters", characterRoutes);
 
 const PORT = process.env.PORT || 3000;
 

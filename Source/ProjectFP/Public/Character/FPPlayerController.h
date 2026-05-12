@@ -27,4 +27,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UFPPartyComponent> PartyComponent;
+
+
 };

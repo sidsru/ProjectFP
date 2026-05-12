@@ -10,6 +10,9 @@
 /**
  * 
  */
+class UFPCharacterDefinition;
+class AFPCharacterBase;
+
 UCLASS()
 class PROJECTFP_API AFPPartyMemberState : public AInfo, public IAbilitySystemInterface
 {
@@ -20,10 +23,12 @@ public:
 	
 	virtual void GetLifetimeReplicatedProps ( TArray<FLifetimeProperty>& OutLifetimeProps ) const override;
 
-	void InitializeMember ( int32 InSlotIndex , FName InCharacterId );
+	void InitializeMember ( int32 InSlotIndex);
 
 	int32 GetSlotIndex ( ) const { return SlotIndex; }
 	FName GetCharacterId ( ) const { return CharacterId; }
+
+	TSubclassOf<AFPCharacterBase> GetCharacterClass ( ) const;
 
 	bool CanBeSwappedIn ( ) const;
 

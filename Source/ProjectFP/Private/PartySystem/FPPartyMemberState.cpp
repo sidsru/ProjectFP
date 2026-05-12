@@ -2,6 +2,7 @@
 
 
 #include "PartySystem/FPPartyMemberState.h"
+#include "Character/FPCharacterBase.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemComponent.h"
 
@@ -20,13 +21,27 @@ void AFPPartyMemberState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(AFPPartyMemberState, CharacterId);
 }
 
-void AFPPartyMemberState::InitializeMember ( int32 InSlotIndex , FName InCharacterId )
+void AFPPartyMemberState::InitializeMember ( int32 InSlotIndex )
 {
 	if ( HasAuthority ( ) == false)
 		return;
 
 	SlotIndex = InSlotIndex;
-	CharacterId = InCharacterId;
+
+	//if ( CharacterDefinition )
+	//{
+	//	CharacterId = CharacterDefinition->CharacterID;
+	//}
+}
+
+TSubclassOf<AFPCharacterBase> AFPPartyMemberState::GetCharacterClass ( ) const
+{
+	//if ( !CharacterDefinition )
+	//{
+	//}
+		return nullptr;
+
+	//return CharacterDefinition->CharacterClass;
 }
 
 bool AFPPartyMemberState::CanBeSwappedIn ( ) const

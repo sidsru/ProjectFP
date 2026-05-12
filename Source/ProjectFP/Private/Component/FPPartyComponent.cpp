@@ -2,11 +2,12 @@
 
 
 #include "Component/FPPartyComponent.h"
-#include "Net/UnrealNetwork.h"
 #include "PartySystem/FPPartyMemberState.h"
+#include "Net/UnrealNetwork.h"
+#include "PartySystem/FPCharacterDef.h"
 
 // Sets default values for this component's properties
-UFPPartyComponent::UFPPartyComponent()
+UFPPartyComponent::UFPPartyComponent ( )
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -20,16 +21,16 @@ void UFPPartyComponent::GetLifetimeReplicatedProps ( TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps ( OutLifetimeProps );
 
-	DOREPLIFETIME(UFPPartyComponent, PartyMembers);
-	DOREPLIFETIME(UFPPartyComponent, ActiveIndex);	
-	DOREPLIFETIME(UFPPartyComponent , bSwapLocked );
+	DOREPLIFETIME ( UFPPartyComponent , PartyMembers );
+	DOREPLIFETIME ( UFPPartyComponent , ActiveIndex );
+	DOREPLIFETIME ( UFPPartyComponent , bSwapLocked );
 
 }
 
 // Called when the game starts
-void UFPPartyComponent::BeginPlay()
+void UFPPartyComponent::BeginPlay ( )
 {
-	Super::BeginPlay();
+	Super::BeginPlay ( );
 
 	if ( GetOwner ( ) && GetOwner ( )->HasAuthority ( ) )
 	{
@@ -50,7 +51,7 @@ void UFPPartyComponent::Server_RequestOwnedCharacters_Implementation ( )
 //	// ...
 //}
 
-void UFPPartyComponent::Server_RequestSwapCharacter_Implementation(int32 NewIndex)
+void UFPPartyComponent::Server_RequestSwapCharacter_Implementation ( int32 NewIndex )
 {
 	ExecuteSwap ( NewIndex );
 }
@@ -76,18 +77,18 @@ AFPPartyMemberState* UFPPartyComponent::GetPartyMember ( int32 Index ) const
 
 void UFPPartyComponent::InitializePartyOnServer ( )
 {
-	UWorld* World = GetWorld ( );
 #pragma region Validation
-	if ( World == nullptr)
+	UWorld* World = GetWorld ( );
+	if ( World == nullptr )
 		return;
 
-	if ( GetOwner() == nullptr || GetOwner ( )->HasAuthority() == false )
+	if ( GetOwner ( ) == nullptr || GetOwner ( )->HasAuthority ( ) == false )
 		return;
 
 	if ( !PartyMembers.IsEmpty ( ) )
 		return;
 
-	APlayerController* OwnerController = Cast<APlayerController> ( GetOwner() );
+	APlayerController* OwnerController = Cast<APlayerController> ( GetOwner ( ) );
 	if ( OwnerController == nullptr )
 		return;
 #pragma endregion
@@ -102,13 +103,23 @@ void UFPPartyComponent::InitializePartyOnServer ( )
 			continue;
 		}
 
-		NewMember->SetOwner ( OwnerController );
-		NewMember->InitializeMember ( i , FName ( *FString::Printf ( TEXT ( "Character_%d" ) , i + 1 ) ) );
+		NewMember->SetOwner ( GetOwner ( ) );
+		NewMember->InitializeMember ( i );
 
 		PartyMembers.Add ( NewMember );
 	}
 
 	ActiveIndex = 0;
+}
+
+const FFPCharacterDef UFPPartyComponent::GetCharacterRow ( FName CharacterRowName )
+{
+	const FFPCharacterDef* CharacterDef =
+		CharacterDataTable->FindRow<FFPCharacterDef> (
+			CharacterRowName ,
+			TEXT ( "Find Character Def" )
+		);
+	return *CharacterDef;
 }
 
 void UFPPartyComponent::OnRep_PartyMembers ( )
@@ -122,7 +133,7 @@ void UFPPartyComponent::OnRep_ActiveIndex ( )
 	// 예: 캐릭터 아이콘 하이라이트 변경
 }
 
-bool UFPPartyComponent::CanSwapTo(int32 NewIndex) const
+bool UFPPartyComponent::CanSwapTo ( int32 NewIndex ) const
 {
 	if ( bSwapLocked )
 	{
@@ -153,7 +164,7 @@ bool UFPPartyComponent::CanSwapTo(int32 NewIndex) const
 	return true;
 }
 
-void UFPPartyComponent::ExecuteSwap(int32 NewIndex)
+void UFPPartyComponent::ExecuteSwap ( int32 NewIndex )
 {
 	if ( CanSwapTo ( NewIndex ) == false )
 	{

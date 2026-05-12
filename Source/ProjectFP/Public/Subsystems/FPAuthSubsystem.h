@@ -11,6 +11,8 @@
 /**
  * 
  */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams ( FFPAuthRegisterResultDelegate, bool, bSuccess, FText, Message );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams ( FFPAuthLoginResultDelegate, bool, bSuccess, FText, Message );
 UCLASS( BlueprintType )
 class PROJECTFP_API UFPAuthSubsystem : public UGameInstanceSubsystem
 {
@@ -23,9 +25,30 @@ public:
 	UFUNCTION ( BlueprintCallable , Category = "Auth" )
 	void Login ( const FString& UserID , const FString& Password );
 
+	UPROPERTY ( BlueprintAssignable , Category = "Auth" )
+	FFPAuthRegisterResultDelegate RegisterResultDelegate;
+
+	UPROPERTY ( BlueprintAssignable , Category = "Auth" )
+	FFPAuthLoginResultDelegate LoginResultDelegate;
+
+public:
+	void SetLoginSession ( int64 InAccountId, const FString& InUserID, const FString& InAccessToken );
+
+	void ClearLoginSession ( );
+
+	bool IsLoggedIn ( ) const;
+	UFUNCTION ( BlueprintCallable , Category = "Auth" )
+	int64 GetAccountId ( ) const;
+	const FString& GetUserID ( ) const;
+	const FString& GetAccessToken ( ) const;
+
 private:
-	FString ApiBaseUrl = TEXT ( "http://127.0.0.1:3000" );
 
 	void OnRegisterResponse ( FHttpRequestPtr Request , FHttpResponsePtr Response , bool bWasSuccessful );
 	void OnLoginResponse ( FHttpRequestPtr Request , FHttpResponsePtr Response , bool bWasSuccessful );
+
+private:
+	int64 Account = -1;
+	FString User;
+	FString AccessToken;
 };

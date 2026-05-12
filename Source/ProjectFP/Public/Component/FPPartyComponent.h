@@ -8,6 +8,8 @@
 
 #pragma region ForwardDeclarations
 class AFPPartyMemberState;
+class UFPCharacterDefinition;
+struct FFPCharacterDef;
 #pragma endregion
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -37,7 +39,13 @@ public:
 	AFPPartyMemberState* GetPartyMember ( int32 Index ) const;
 
 	void InitializePartyOnServer();
+
+	UFUNCTION ( BlueprintCallable , Category = "Party" )
+	const FFPCharacterDef GetCharacterRow (FName CharacterRowName);
+
 protected:
+
+
 	UPROPERTY ( ReplicatedUsing = OnRep_PartyMembers )
 	TArray<TObjectPtr<AFPPartyMemberState>> PartyMembers;
 
@@ -56,4 +64,8 @@ protected:
 
 	bool CanSwapTo(int32 NewIndex) const;
 	void ExecuteSwap(int32 NewIndex);
+
+private:
+	UPROPERTY ( EditDefaultsOnly , BlueprintReadOnly , Category = "Character" , meta = ( AllowPrivateAccess = "true" ) )
+	TObjectPtr<UDataTable> CharacterDataTable;
 };
